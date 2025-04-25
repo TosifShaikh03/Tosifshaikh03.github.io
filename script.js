@@ -10,13 +10,11 @@
  function getStatus(dateToPass) {
      const today = new Date();
      const passDate = new Date(dateToPass);
-     if (today > passDate) {
-         return { text: 'Passed', class: 'status-passed' };
-     } else if (today.toDateString() === passDate.toDateString()) {
+     if (today === passDate) {
          return { text: 'Due Today', class: 'status-overdue' };
-     } else {
-         return { text: 'Pending', class: 'status-pending' };
-     }
+     } else if (today.toDateString() > passDate.toDateString()) {
+         return { text: 'Passed', class: 'status-passed' };
+     } 
  }
 
  // Function to render the cheque table
@@ -29,7 +27,7 @@
          const row = document.createElement('tr');
          row.innerHTML = `
              <td>${cheque.recipient}</td>
-             <td>${cheque.dateGiven}</td>
+             <td>${cheque.amount}</td>
              <td>${cheque.dateToPass}</td>
              <td class="${status.class}">${status.text}</td>
              <td><button class="delete-btn" onclick="deleteCheque(${index})">Delete</button></td>
@@ -43,18 +41,18 @@
      e.preventDefault();
 
      const recipient = document.getElementById('recipient').value;
-     const dateGiven = document.getElementById('dateGiven').value;
+     const amount = document.getElementById('amount').value;
      const dateToPass = document.getElementById('dateToPass').value;
 
      // Validate dates
-     if (new Date(dateToPass) < new Date(dateGiven)) {
-         alert('Date to Pass cannot be earlier than Date Given.');
-         return;
-     }
+    //  if (new Date(dateToPass) < new Date(dateGiven)) {
+    //      alert('Date to Pass cannot be earlier than Date Given.');
+    //      return;
+    //  }
 
-     cheques.push({ recipient, dateGiven, dateToPass });
-     saveCheques();
-     renderTable();
+    //  cheques.push({ recipient, dateGiven, dateToPass });
+    //  saveCheques();
+    //  renderTable();
 
      // Reset form
      document.getElementById('chequeForm').reset();
