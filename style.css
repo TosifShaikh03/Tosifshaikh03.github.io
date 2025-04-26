@@ -10,11 +10,30 @@ h1 {
     color: #333;
 }
 
-.form-container {
+/* .form-container {
     background-color: #f9f9f9;
     padding: 20px;
     border-radius: 8px;
+    width: auto;
     margin-bottom: 20px;
+} */
+
+@media (min-width: 320px) {
+ 
+
+    .form-container {
+        background-color: #f9f9f9;
+        margin-bottom: 10px;
+        width: 370px;
+    padding: 10px;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+    .boosDiv{
+        padding: 50px;
+        width: 400px;
+      }
+    
 }
 
 label {
@@ -24,7 +43,7 @@ label {
 }
 
 input {
-    width: 100%;
+    width: 95%;
     padding: 8px;
     margin-bottom: 10px;
     border: 1px solid #ccc;
@@ -46,7 +65,7 @@ button:hover {
 }
 
 table {
-    width: 100%;
+    width: auto;
     border-collapse: collapse;
     margin-top: 20px;
 
@@ -91,3 +110,4 @@ th {
     border-radius: 5px;
 
 }
+
