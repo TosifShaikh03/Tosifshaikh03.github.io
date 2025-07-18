@@ -1,73 +1,74 @@
-// Load cheques from localStorage or initialize empty array
-let cheques = JSON.parse(localStorage.getItem('cheques')) || [];
 
-// Function to save cheques to localStorage
-function saveCheques() {
-    localStorage.setItem('cheques', JSON.stringify(cheques));
-}
+        let cheques = [];
 
-// Function to calculate status based on date to pass
-function getStatus(dateToPass) {
-    const today = new Date();
-    const passDate = new Date(dateToPass);
+        function addCheque() {
+            const receiver = document.getElementById('receiver').value;
+            const date = document.getElementById('date').value;
+            const amount = document.getElementById('amount').value;
 
-    if (today.toDateString() === passDate.toDateString()) {
-        return { text: 'Due Today', class: 'status-overdue' };
-    }
-    else if (today > passDate) {
-        return { text: 'Passed', class: 'status-passed' };
-    }
-    else (today.toDateString() < passDate.toDateString()); {
-        return { text: 'Pending', class: 'status-pending' };
-    }
+            if (receiver && date && amount) {
+                const status = determineStatus(date);
+                cheques.push({ receiver, date, amount, status });
+                sortCheques();
+                renderCheques();
+                clearForm();
+            } else {
+                alert('Please fill all fields');
+            }
+        }
 
-}
+        function determineStatus(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to midnight for comparison
+            const chequeDate = new Date(date);
+            chequeDate.setHours(0, 0, 0, 0);
 
-// Function to render the cheque table
-function renderTable() {
-    const tableBody = document.getElementById('chequeTableBody');
-    tableBody.innerHTML = '';
+            if (chequeDate > today) {
+                return 'Pending';
+            } else if (chequeDate < today) {
+                return 'Passed';
+            } else {
+                return 'Due Today';
+            }
+        }
 
-    cheques.forEach((cheque, index) => {
-        const status = getStatus(cheque.dateToPass);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-                   <td>${cheque.recipient}</td>
-                   <td>${cheque.dateGiven}</td>
-                   <td>${cheque.dateToPass}</td>
-                   <td class="${status.class}">${status.text}</td>
-                   <td><button class="delete-btn" onclick="deleteCheque(${index})">Delete</button></td>
-               `;
-        tableBody.appendChild(row);
-    });
-}
+        function sortCheques() {
+            cheques.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
 
-// Function to add a new cheque
-document.getElementById('chequeForm').addEventListener('submit', (e) => {
-    e.preventDefault();
+        function renderCheques() {
+            const chequeList = document.getElementById('chequeList');
+            chequeList.innerHTML = '';
 
-    const recipient = document.getElementById('recipient').value;
-    const dateGiven = document.getElementById('dateGiven').value;
-    const dateToPass = document.getElementById('dateToPass').value;
+            cheques.forEach((cheque, index) => {
+                const card = document.createElement('div');
+                card.className = 'cheque-card';
+                card.innerHTML = `
+                    <h3>${cheque.receiver}</h3>
+                    <p>Date: ${cheque.date}</p>
+                    <p>Amount: $${parseFloat(cheque.amount).toLocaleString()}</p>
+                    <p>Status: <span class="status status-${cheque.status.toLowerCase().replace(' ', '-')}"">${cheque.status}</span></p>
+                    <button class="delete-btn" onclick="confirmDelete(${index})">Delete</button>
+                `;
+                chequeList.appendChild(card);
+            });
+        }
 
+        function confirmDelete(index) {
+            const confirmDelete = confirm(`Are you sure you want to delete the cheque for ${cheques[index].receiver}?`);
+            if (confirmDelete) {
+                deleteCheque(index);
+            }
+        }
 
+        function deleteCheque(index) {
+            cheques.splice(index, 1);
+            renderCheques();
+        }
 
-    cheques.push({ recipient, dateGiven, dateToPass });
-    saveCheques();
-    renderTable();
-
-    // Reset form
-    document.getElementById('chequeForm').reset();
-});
-
-// Function to delete a cheque
-window.deleteCheque = function (index) {
-    if (confirm('Are you sure you want to delete this cheque?')) {
-        cheques.splice(index, 1);
-        saveCheques();
-        renderTable();
-    }
-};
-
-// Initial render
-renderTable();
+        function clearForm() {
+            document.getElementById('receiver').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('amount').value = '';
+        }
+    
