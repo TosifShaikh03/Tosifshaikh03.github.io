@@ -24,19 +24,22 @@
             margin: 0 auto;
         }
 
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #ffffff;
             margin-bottom: 30px;
             font-size: 2rem;
         }
 
-        .form-container {
+        .auth-container, .form-container {
             background: #2c2c2c;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
             margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .form-group {
@@ -79,6 +82,13 @@
 
         button:hover {
             background: #357abd;
+        }
+
+        .toggle-btn {
+            background: none;
+            color: #4a90e2;
+            text-decoration: underline;
+            margin-top: 10px;
         }
 
         .cheque-list {
@@ -141,12 +151,28 @@
             background: #c9302c;
         }
 
+        .logout-btn {
+            background: #6c757d;
+            margin-top: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .logout-btn:hover {
+            background: #5a6268;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 600px) {
-            h1 {
+            h1, h2 {
                 font-size: 1.5rem;
             }
 
-            .form-container {
+            .auth-container, .form-container {
                 padding: 15px;
             }
 
@@ -158,41 +184,187 @@
 </head>
 <body>
     <div class="container">
-        <h1>Cheque Reminder</h1>
-        <div class="form-container">
-            <div class="form-group">
-                <label for="receiver">Receiver Name</label>
-                <input type="text" id="receiver" placeholder="Enter receiver name">
+        <!-- Authentication Section -->
+        <div id="authSection" class="auth-container">
+            <div id="loginForm">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password">
+                </div>
+                <button id="loginBtn">Login</button>
+                <button class="toggle-btn" id="toggleToSignup">Need an account? Sign Up</button>
             </div>
-            <div class="form-group">
-                <label for="date">Date of Passing</label>
-                <input type="date" id="date">
+            <div id="signupForm" class="hidden">
+                <h2>Sign Up</h2>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="Enter password">
+                </div>
+                <button id="signupBtn">Sign Up</button>
+                <button class="toggle-btn" id="toggleToLogin">Already have an account? Login</button>
             </div>
-            <div class="form-group">
-                <label for="amount">Amount</label>
-                <input type="number" id="amount" placeholder="Enter amount">
-            </div>
-            <button onclick="addCheque()">Add Cheque</button>
         </div>
-        <div class="cheque-list" id="chequeList"></div>
+
+        <!-- Cheque Reminder Section -->
+        <div id="chequeSection" class="hidden">
+            <h1>Cheque Reminder</h1>
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="receiver">Receiver Name</label>
+                    <input type="text" id="receiver" placeholder="Enter receiver name">
+                </div>
+                <div class="form-group">
+                    <label for="date">Date of Passing</label>
+                    <input type="date" id="date">
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" placeholder="Enter amount">
+                </div>
+                <button id="addChequeBtn">Add Cheque</button>
+            </div>
+            <div class="cheque-list" id="chequeList"></div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
     </div>
 
-    <script>
-        let cheques = [];
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 
-        // Load cheques from local storage on page load
-        function loadCheques() {
-            const savedCheques = localStorage.getItem('cheques');
-            if (savedCheques) {
-                cheques = JSON.parse(savedCheques);
-                sortCheques();
-                renderCheques();
+        // Firebase configuration (replace with your Firebase project config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfqturwH3YDGSL199gF9y9kq4rdNo_8fI",
+  authDomain: "cheque-remind.firebaseapp.com",
+  projectId: "cheque-remind",
+  storageBucket: "cheque-remind.firebasestorage.app",
+  messagingSenderId: "424212410693",
+  appId: "1:424212410693:web:9de1c41cdd79d5d2e30e2c",
+  measurementId: "G-LD77V5VCM7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        let cheques = [];
+        let currentUser = null;
+
+        // DOM elements
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const toggleToSignup = document.getElementById('toggleToSignup');
+        const toggleToLogin = document.getElementById('toggleToLogin');
+        const addChequeBtn = document.getElementById('addChequeBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Monitor authentication state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('chequeSection').classList.remove('hidden');
+                loadCheques();
+            } else {
+                currentUser = null;
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('chequeSection').classList.add('hidden');
+                cheques = [];
+                document.getElementById('chequeList').innerHTML = '';
+            }
+        });
+
+        // Event listeners
+        loginBtn.addEventListener('click', login);
+        signupBtn.addEventListener('click', signup);
+        toggleToSignup.addEventListener('click', toggleAuthForm);
+        toggleToLogin.addEventListener('click', toggleAuthForm);
+        addChequeBtn.addEventListener('click', addCheque);
+        logoutBtn.addEventListener('click', logout);
+
+        // Toggle between login and signup forms
+        function toggleAuthForm() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('signupForm').classList.toggle('hidden');
+        }
+
+        // Login function
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            if (email && password) {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        alert('Login successful!');
+                        clearAuthForms();
+                    })
+                    .catch((error) => {
+                        alert(`Login failed: ${error.message}`);
+                    });
+            } else {
+                alert('Please fill all fields');
             }
         }
 
-        // Save cheques to local storage
+        // Signup function
+        function signup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            if (email && password) {
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        alert('Sign up successful! Please log in.');
+                        toggleAuthForm();
+                        clearAuthForms();
+                    })
+                    .catch((error) => {
+                        alert(`Sign up failed: ${error.message}`);
+                    });
+            } else {
+                alert('Please fill all fields');
+            }
+        }
+
+        // Logout function
+        function logout() {
+            signOut(auth)
+                .then(() => {
+                    alert('Logged out successfully');
+                })
+                .catch((error) => {
+                    alert(`Logout failed: ${error.message}`);
+                });
+        }
+
+        // Load cheques from local storage for the current user
+        function loadCheques() {
+            if (currentUser) {
+                const savedCheques = localStorage.getItem(`cheques_${currentUser.uid}`);
+                if (savedCheques) {
+                    cheques = JSON.parse(savedCheques);
+                    sortCheques();
+                    renderCheques();
+                } else {
+                    cheques = [];
+                    renderCheques();
+                }
+            }
+        }
+
+        // Save cheques to local storage for the current user
         function saveCheques() {
-            localStorage.setItem('cheques', JSON.stringify(cheques));
+            if (currentUser) {
+                localStorage.setItem(`cheques_${currentUser.uid}`, JSON.stringify(cheques));
+            }
         }
 
         function addCheque() {
@@ -214,7 +386,7 @@
 
         function determineStatus(date) {
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize to midnight for comparison
+            today.setHours(0, 0, 0, 0);
             const chequeDate = new Date(date);
             chequeDate.setHours(0, 0, 0, 0);
 
@@ -243,9 +415,17 @@
                     <p>Date: ${cheque.date}</p>
                     <p>Amount: $${parseFloat(cheque.amount).toLocaleString()}</p>
                     <p>Status: <span class="status status-${cheque.status.toLowerCase().replace(' ', '-')}"">${cheque.status}</span></p>
-                    <button class="delete-btn" onclick="confirmDelete(${index})">Delete</button>
+                    <button class="delete-btn" data-index="${index}">Delete</button>
                 `;
                 chequeList.appendChild(card);
+            });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const index = parseInt(button.getAttribute('data-index'));
+                    confirmDelete(index);
+                });
             });
         }
 
@@ -268,8 +448,12 @@
             document.getElementById('amount').value = '';
         }
 
-        // Initialize by loading cheques from local storage
-        loadCheques();
+        function clearAuthForms() {
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('signupEmail').value = '';
+            document.getElementById('signupPassword').value = '';
+        }
     </script>
 </body>
 </html>
