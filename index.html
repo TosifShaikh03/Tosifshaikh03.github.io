@@ -4,10 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheque Reminder</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #1e1e1e;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .form-container {
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
+            font-size: 1rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #3a3a3a;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+        }
+
+        button {
+            background: #4a90e2;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        .cheque-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .cheque-card {
+            background: #2c2c2c;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .cheque-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .cheque-card h3 {
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .cheque-card p {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #cccccc;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #f0ad4e;
+            color: #1e1e1e;
+        }
+
+        .status-passed {
+            background: #5cb85c;
+            color: #ffffff;
+        }
+
+        .status-due-today {
+            background: #d9534f;
+            color: #ffffff;
+        }
+
+        .delete-btn {
+            background: #d9534f;
+        }
+
+        .delete-btn:hover {
+            background: #c9302c;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-container {
+                padding: 15px;
+            }
+
+            .cheque-card {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
-   <div class="container">
+    <div class="container">
         <h1>Cheque Reminder</h1>
         <div class="form-container">
             <div class="form-group">
@@ -26,6 +176,100 @@
         </div>
         <div class="cheque-list" id="chequeList"></div>
     </div>
-<script src="script.js"></script>
+
+    <script>
+        let cheques = [];
+
+        // Load cheques from local storage on page load
+        function loadCheques() {
+            const savedCheques = localStorage.getItem('cheques');
+            if (savedCheques) {
+                cheques = JSON.parse(savedCheques);
+                sortCheques();
+                renderCheques();
+            }
+        }
+
+        // Save cheques to local storage
+        function saveCheques() {
+            localStorage.setItem('cheques', JSON.stringify(cheques));
+        }
+
+        function addCheque() {
+            const receiver = document.getElementById('receiver').value;
+            const date = document.getElementById('date').value;
+            const amount = document.getElementById('amount').value;
+
+            if (receiver && date && amount) {
+                const status = determineStatus(date);
+                cheques.push({ receiver, date, amount, status });
+                sortCheques();
+                saveCheques();
+                renderCheques();
+                clearForm();
+            } else {
+                alert('Please fill all fields');
+            }
+        }
+
+        function determineStatus(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to midnight for comparison
+            const chequeDate = new Date(date);
+            chequeDate.setHours(0, 0, 0, 0);
+
+            if (chequeDate > today) {
+                return 'Pending';
+            } else if (chequeDate < today) {
+                return 'Passed';
+            } else {
+                return 'Due Today';
+            }
+        }
+
+        function sortCheques() {
+            cheques.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        function renderCheques() {
+            const chequeList = document.getElementById('chequeList');
+            chequeList.innerHTML = '';
+
+            cheques.forEach((cheque, index) => {
+                const card = document.createElement('div');
+                card.className = 'cheque-card';
+                card.innerHTML = `
+                    <h3>${cheque.receiver}</h3>
+                    <p>Date: ${cheque.date}</p>
+                    <p>Amount: $${parseFloat(cheque.amount).toLocaleString()}</p>
+                    <p>Status: <span class="status status-${cheque.status.toLowerCase().replace(' ', '-')}"">${cheque.status}</span></p>
+                    <button class="delete-btn" onclick="confirmDelete(${index})">Delete</button>
+                `;
+                chequeList.appendChild(card);
+            });
+        }
+
+        function confirmDelete(index) {
+            const confirmDelete = confirm(`Are you sure you want to delete the cheque for ${cheques[index].receiver}?`);
+            if (confirmDelete) {
+                deleteCheque(index);
+            }
+        }
+
+        function deleteCheque(index) {
+            cheques.splice(index, 1);
+            saveCheques();
+            renderCheques();
+        }
+
+        function clearForm() {
+            document.getElementById('receiver').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('amount').value = '';
+        }
+
+        // Initialize by loading cheques from local storage
+        loadCheques();
+    </script>
 </body>
 </html>
