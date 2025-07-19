@@ -1,5 +1,19 @@
+      let cheques = [];
 
-        let cheques = [];
+        // Load cheques from local storage on page load
+        function loadCheques() {
+            const savedCheques = localStorage.getItem('cheques');
+            if (savedCheques) {
+                cheques = JSON.parse(savedCheques);
+                sortCheques();
+                renderCheques();
+            }
+        }
+
+        // Save cheques to local storage
+        function saveCheques() {
+            localStorage.setItem('cheques', JSON.stringify(cheques));
+        }
 
         function addCheque() {
             const receiver = document.getElementById('receiver').value;
@@ -10,6 +24,7 @@
                 const status = determineStatus(date);
                 cheques.push({ receiver, date, amount, status });
                 sortCheques();
+                saveCheques();
                 renderCheques();
                 clearForm();
             } else {
@@ -63,6 +78,7 @@
 
         function deleteCheque(index) {
             cheques.splice(index, 1);
+            saveCheques();
             renderCheques();
         }
 
@@ -71,4 +87,6 @@
             document.getElementById('date').value = '';
             document.getElementById('amount').value = '';
         }
-    
+
+        // Initialize by loading cheques from local storage
+        loadCheques();
